@@ -1,6 +1,6 @@
 # filterlists_api.SyntaxesApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *https://api.filterlists.com*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -21,10 +21,10 @@ from filterlists_api.models.filter_lists_directory_application_queries_get_synta
 from filterlists_api.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to http://localhost
+# Defining the host is optional and defaults to https://api.filterlists.com
 # See configuration.py for a list of all supported configuration parameters.
 configuration = filterlists_api.Configuration(
-    host = "http://localhost"
+    host = "https://api.filterlists.com"
 )
 
 
