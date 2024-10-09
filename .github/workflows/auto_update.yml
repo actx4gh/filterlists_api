@@ -1,0 +1,97 @@
+name: Auto Update Client on API Change
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:       # Allows manual triggering
+
+jobs:
+  update_client:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tagging
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jq
+
+      - name: Check for API changes
+        id: check_api
+        run: |
+          # Download the latest OpenAPI spec
+          curl -s "https://api.filterlists.com/v1/openapi.json" -o openapi_new.json
+
+          # Compare with the existing spec
+          if [ -f openapi.json ]; then
+            if cmp -s openapi.json openapi_new.json; then
+              echo "API has not changed."
+              echo "api_changed=false" >> $GITHUB_ENV
+            else
+              echo "API has changed."
+              echo "api_changed=true" >> $GITHUB_ENV
+            fi
+          else
+            echo "No existing OpenAPI spec found. Proceeding with the build."
+            echo "api_changed=true" >> $GITHUB_ENV
+
+      - name: Exit if API has not changed
+        if: env.api_changed == 'false'
+        run: |
+          echo "No changes detected in the API. Exiting workflow."
+          exit 0
+
+      - name: Update version
+        if: env.api_changed == 'true'
+        id: bump_version
+        run: |
+          # Read the current version
+          CURRENT_VERSION=$(cat version)
+          echo "Current version: $CURRENT_VERSION"
+
+          # Bump the patch version
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          PATCH=$((patch + 1))
+          NEW_VERSION="$major.$minor.$PATCH"
+          echo "New version: $NEW_VERSION"
+
+          # Update the version file
+          echo "$NEW_VERSION" > version
+
+          # Export the new version
+          echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Run build script
+        if: env.api_changed == 'true'
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Commit and Push Changes
+        if: env.api_changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update client for API changes - version ${{ env.new_version }}"
+          git push
+
+      - name: Create and Push Tag
+        if: env.api_changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag -a "v${{ env.new_version }}" -m "Release version ${{ env.new_version }}"
+          git push origin "v${{ env.new_version }}"
+
