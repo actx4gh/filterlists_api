@@ -1,4 +1,4 @@
-name: Tag and Push Version
+name: Tag, Publish to PyPI, and Create Release
 
 on:
   workflow_run:
@@ -7,10 +7,10 @@ on:
       - completed
 
 permissions:
-  contents: write
+  contents: write  # Needed to push tags and create releases
 
 jobs:
-  tag_and_push:
+  tag_and_publish:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
@@ -19,19 +19,65 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch all history for tagging
+
       - name: Read version
         id: get_version
         run: |
           VERSION=$(cat version)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Configure Git
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
+
       - name: Create and Push Tag
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
           git push https://$PERSONAL_ACCESS_TOKEN@github.com/${{ github.repository }} "v${{ env.VERSION }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'  # Use a single version for publishing
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
+
+      - name: Publish package to PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          twine upload dist/*
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          release_name: "v${{ env.VERSION }}"
+          draft: false
+          prerelease: false
+          body: |
+            Release of version v${{ env.VERSION }}
+
+      - name: Upload Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*
+          asset_name: $(basename ./dist/*)
+          asset_content_type: application/octet-stream
