@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "filterlists_api"
-version = "1.0.6"
+version = "1.0.7"
 description = "FilterLists Directory API"
 authors = ["Aaron Colichia <b72d8917-851f-4864-ad5c-61630408048d@gb4emlsep.anonaddy.com>"]
 license = "MIT License"
