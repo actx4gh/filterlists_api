@@ -64,26 +64,16 @@ jobs:
         run: |
           twine upload dist/*
 
-      - name: Create GitHub Release
-        id: create_release  # Assign an ID to reference outputs
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "v${{ env.VERSION }}"
-          release_name: "v${{ env.VERSION }}"
-          draft: false
-          prerelease: false
-          body: |
-            Release of version v${{ env.VERSION }}
-
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/*
-          asset_name: $(basename ./dist/*)
-          asset_content_type: application/octet-stream
+      - name: Create GitHub Release and Upload Assets
+	uses: ncipollo/release-action@v1
+	with:
+	  tag: "v${{ env.VERSION }}"
+	  releaseName: "v${{ env.VERSION }}"
+	  draft: false
+	  prerelease: false
+	  token: ${{ secrets.GITHUB_TOKEN }}
+	  artifacts: "dist/*"
+	  artifactContentType: "application/octet-stream"
+	  body: |
+	    Release of version v${{ env.VERSION }}
 

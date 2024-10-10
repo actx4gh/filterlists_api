@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 
 # import apis into sdk package
 from filterlists_api.api.filter_lists_api import FilterListsApi
