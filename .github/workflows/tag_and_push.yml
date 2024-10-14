@@ -65,15 +65,14 @@ jobs:
           twine upload dist/*
 
       - name: Create GitHub Release and Upload Assets
-	uses: ncipollo/release-action@v1
-	with:
-	  tag: "v${{ env.VERSION }}"
-	  releaseName: "v${{ env.VERSION }}"
-	  draft: false
-	  prerelease: false
-	  token: ${{ secrets.GITHUB_TOKEN }}
-	  artifacts: "dist/*"
-	  artifactContentType: "application/octet-stream"
-	  body: |
-	    Release of version v${{ env.VERSION }}
-
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "v${{ env.VERSION }}"
+          name: "v${{ env.VERSION }}"  # Corrected parameter name
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "dist/*"
+          artifactContentType: "application/octet-stream"
+          body: |
+            Release of version v${{ env.VERSION }}
